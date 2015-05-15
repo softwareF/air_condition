@@ -6,8 +6,62 @@ import json
 
 class server:
     @asyncio.coroutine
+    def record(self,cid,temp,speed,target):
+        self.old_cid = cid
+        self.old_temp = temp
+        self.old_speed = speed
+        self.old_target = target
+
+    @asyncio.coroutine
+    def season_mode(self): #needs completed
+        season = "winter"
+        return season
+
+    @asyncio.coroutine
+    def calculate_now_temperature(self):#needs completed
+        now_temperature = 30
+        return now_temperature
+
+    @asyncio.coroutine
+    def calculate_cost(self):
+        #cost = time1*price1+time2*price2+time3*price3
+        cost = 10
+        return cost
+
+    @asyncio.coroutine
     def judge(self,str):
-        return  str
+        if str['method'] =="handshake":
+            self.record(str['cid'],str['temp'],str['speed'],str['target'])
+            mode = yield from self.season_mode()
+            dealed = {"method":"handshake","result":"ok","config":{"mode":mode,"temp-max":[30],"temp-min":[25]},"state":"run"}
+        elif str['method'] =="set":
+            if str['target'] <= 30 and str['target'] >=25:
+                state = "run"
+            else:
+                state = "standby"
+            dealed = {"method":"set","state":state}
+        elif str['method'] =="get":
+            temp = yield from self.calculate_now_temperature()
+            if temp == 30: #needs completed
+                state = "standby"
+            else:
+                state = "run"
+            cost = yield from self.calculate_cost()
+            dealed = {"method":"get","temp":temp,"state":state,"cost":cost}
+        elif str['method'] =="changed":
+            if str['temp'] >= 30 or str['temp'] <= 25: #needs completed
+                state = "standby"
+            else:
+                state = "run"
+            dealed = {"method":"changed","state":state}
+        elif str['method'] =="shutdown":
+            #needs completed
+            dealed = {"method":"shutdown","result":"ok","state":"shutdown"}
+        elif str['method'] =="checkout":
+            #needs completed
+            dealed = {"method":"checkout","state":"shutdown"}
+        return dealed
+
     @asyncio.coroutine
     def hello(self,websocket, path):
         var = 1
