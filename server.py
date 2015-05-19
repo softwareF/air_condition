@@ -33,10 +33,10 @@ class server:
         if str['method'] =="handshake":
             self.record(str['cid'],str['temp'],str['speed'],str['target'])
             mode = yield from self.season_mode()
-            dealed = {"method":"handshake","result":"ok","config":{"mode":mode,"temp-max":[30],"temp-min":[25]},"state":"run"}
+            dealed = {"method":"handshake","result":"ok","config":{"mode":mode,"temp-max":[30],"temp-min":[25]},"state":"running"}
         elif str['method'] =="set":
             if str['target'] <= 30 and str['target'] >=25:
-                state = "run"
+                state = "running"
             else:
                 state = "standby"
             dealed = {"method":"set","state":state}
@@ -45,14 +45,14 @@ class server:
             if temp == 30: #needs completed
                 state = "standby"
             else:
-                state = "run"
+                state = "running"
             cost = yield from self.calculate_cost()
             dealed = {"method":"get","temp":temp,"state":state,"cost":cost}
         elif str['method'] =="changed":
             if str['temp'] >= 30 or str['temp'] <= 25: #needs completed
                 state = "standby"
             else:
-                state = "run"
+                state = "running"
             dealed = {"method":"changed","state":state}
         elif str['method'] =="shutdown":
             #needs completed
