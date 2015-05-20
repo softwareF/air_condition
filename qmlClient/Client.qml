@@ -162,8 +162,8 @@ Window {
                     var tmp = parseInt(destTemp.text);
                     if(tmp < tempMax) {
                         destTemp.text = (tmp + 1).toString();
-                        testInterval();
                     }
+                    testInterval.restart();
                 }
             }
 
@@ -175,8 +175,8 @@ Window {
                     var tmp = parseInt(destTemp.text);
                     if(tmp > tempMin) {
                         destTemp.text = (tmp - 1).toString();
-                        testInterval();
                     }
+                    testInterval.restart();
                 }
             }
         }
@@ -211,7 +211,7 @@ Window {
                         fanSpeed = "low";
                         break;
                     }
-                    testInterval();
+                    testInterval.restart();
                 }
             }
             RadioButton {
@@ -421,29 +421,19 @@ Window {
         onTriggered: {
             var tmp = parseInt(curTemp.text);
             if(mode.text === "制热"){
-                if(tmp > tempMin)
-                    curTemp.text = (tmp - 1).toString();
+                curTemp.text = (tmp - 1).toString();
             }
             else if (mode.text == "制冷"){
-                if(tmp < tempMax)
-                    curTemp.text = (tmp + 1).toString();
+                curTemp.text = (tmp + 1).toString();
             }
         }
     }
 
-    Component.onCompleted: {
-        clientID = "xxx";
-        fanSpeed = "medium";
-        tBefore = 0;
-        reset();
-    }
-
-    /*** custom function ***/
-    function testInterval() {
-        console.debug("testInterval");
-        tAfter = Date.now();
-        console.debug(tAfter + "-" + tBefore + "=" + (tAfter - tBefore));
-        if(tAfter - tBefore > 1000) {
+    Timer {
+        id: testInterval
+        interval: 1000
+        repeat: false
+        onTriggered: {
             var setReq = {
                 "method": "set",
                 "cid": clientID,
@@ -453,8 +443,16 @@ Window {
             socket.sendTextMessage(JSON.stringify(setReq));
             console.debug("Send: "+ JSON.stringify(setReq));
         }
-        tBefore = tAfter;
     }
+
+    Component.onCompleted: {
+        clientID = "123";
+        fanSpeed = "medium";
+        tBefore = 0;
+        reset();
+    }
+
+    /*** custom function ***/
     function reset() {
         curTemp.text = 25;
         destTemp.text = 25;
