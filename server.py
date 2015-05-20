@@ -10,6 +10,7 @@ class server:
     def inti_mode(self):
         self.mode = input("Input the mode(winter/summer):")
         self.running_num = input("Input the max running number:")
+        self.info = {}
         self.key = 1
         if self.mode == "winter":
             self.temp_max = 30
@@ -19,7 +20,6 @@ class server:
             self.temp_min = 18
 
     def record(self,cid,temp,speed,target,state,cost):
-        self.info = {}
         self.info[cid] = [temp,speed,target,state,cost]
 
     def calculate_time(self,cid):#maybe useful or useless
