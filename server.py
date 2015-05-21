@@ -45,7 +45,7 @@ class server:
         else:
             now_temperature = self.info[cid][0]
         self.info[cid][0] = now_temperature
-        return now_temperature
+        return int(now_temperature)
 
     def calculate_cost(self,cid):
         if self.info[cid][3] == "running":
@@ -60,7 +60,7 @@ class server:
             cost = self.info[cid][4]
         self.info[cid][4] = cost
         self.info[cid][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-        return cost
+        return round(cost,2)
 
     def dispatch(self):
         pass
@@ -70,97 +70,98 @@ class server:
 
     def judge(self,str1):
         if str1['method'] =="handshake":
-            self.record(int(str1['cid']),int(str1['temp']),str1['speed'],int(str1['target']),"running",0)
+            self.record(str1['cid'],int(str1['temp']),str1['speed'],int(str1['target']),"running",0)
             dealed = {"method":"handshake","result":"ok","config":{"mode":self.mode,"temp-max":self.temp_max,"temp-min":self.temp_min},"state":"running"}
             time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-            self.info[int(str1['cid'])] = self.info[int(str1['cid'])] + [time_str]
+            self.info[str1['cid']] = self.info[str1['cid']] + [time_str]
             self.key = 1
         elif str1['method'] =="set":
             self.dispatch()
             if self.mode == "winter":
-                if int(str1['target']) > self.info[int(str1['cid'])][0]:
-                    self.info[int(str1['cid'])][1] = str1['speed']
-                    self.info[int(str1['cid'])][2] = int(str1['target'])
+                if int(str1['target']) > self.info[str1['cid']][0]:
+                    self.info[str1['cid']][1] = str1['speed']
+                    self.info[str1['cid']][2] = int(str1['target'])
                     state = "running"
                     self.key = 1
-                    if self.info[int(str1['cid'])][3] != "running":
-                        self.info[int(str1['cid'])][3] = "running"
-                        self.info[int(str1['cid'])][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+                    if self.info[str1['cid']][3] != "running":
+                        self.info[str1['cid']][3] = "running"
+                        self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
                 else:
-                    self.info[int(str1['cid'])][1] = str1['speed']
-                    self.info[int(str1['cid'])][2] = int(str1['target'])
+                    self.info[str1['cid']][1] = str1['speed']
+                    self.info[str1['cid']][2] = int(str1['target'])
                     state = "standby"
-                    if self.info[int(str1['cid'])][3] != "standby":
+                    if self.info[str1['cid']][3] != "standby":
                         self.key = 0
-                        self.info[int(str1['cid'])][3] = "standby"
-                        self.info[int(str1['cid'])][0] = self.calculate_now_temperature(int(str1['cid']))
-                        self.info[int(str1['cid'])][4] = self.calculate_cost(int(str1['cid']))
-                        self.info[int(str1['cid'])][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+                        self.info[str1['cid']][3] = "standby"
+                        self.info[str1['cid']][0] = self.calculate_now_temperature(str1['cid'])
+                        self.info[str1['cid']][4] = self.calculate_cost(str1['cid'])
+                        self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             else:
-                if int(str1['target']) < self.info[int(str1['cid'])][0]:
-                    self.info[int(str1['cid'])][1] = str1['speed']
-                    self.info[int(str1['cid'])][2] = int(str1['target'])
+                if int(str1['target']) < self.info[str1['cid']][0]:
+                    self.info[str1['cid']][1] = str1['speed']
+                    self.info[str1['cid']][2] = int(str1['target'])
                     state = "running"
                     self.key = 1
-                    if self.info[int(str1['cid'])][3] != "running":
-                        self.info[int(str1['cid'])][3] = "running"
-                        self.info[int(str1['cid'])][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+                    if self.info[str1['cid']][3] != "running":
+                        self.info[str1['cid']][3] = "running"
+                        self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
                 else:
-                    self.info[int(str1['cid'])][1] = str1['speed']
-                    self.info[int(str1['cid'])][2] = int(str1['target'])
+                    self.info[str1['cid']][1] = str1['speed']
+                    self.info[str1['cid']][2] = int(str1['target'])
                     state = "standby"
-                    if self.info[int(str1['cid'])][3] != "standby":
+                    if self.info[str1['cid']][3] != "standby":
                         self.key = 0
-                        self.info[int(str1['cid'])][3] = "standby"
-                        self.info[int(str1['cid'])][0] = self.calculate_now_temperature(int(str1['cid']))
-                        self.info[int(str1['cid'])][4] = self.calculate_cost(int(str1['cid']))
-                        self.info[int(str1['cid'])][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+                        self.info[str1['cid']][3] = "standby"
+                        self.info[str1['cid']][0] = self.calculate_now_temperature(str1['cid'])
+                        self.info[str1['cid']][4] = self.calculate_cost(str1['cid'])
+                        self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             dealed = {"method":"set","state":state}
         elif str1['method'] =="get":
-            temp = self.calculate_now_temperature(int(str1['cid']))
+            temp = self.calculate_now_temperature(str1['cid'])
             if self.mode == "winter":
-                if temp >= self.info[int(str1['cid'])][2]:
-                    self.info[int(str1['cid'])][3] = "standby"
+                if temp >= self.info[str1['cid']][2]:
+                    cost = self.calculate_cost(str1['cid'])
+                    self.info[str1['cid']][3] = "standby"
                     state = "standby"
                 else:
                     state = "running"
             else:
-                if temp <= self.info[int(str1['cid'])][2]:
-                    self.info[int(str1['cid'])][3] = "standby"
+                if temp <= self.info[str1['cid']][2]:
+                    self.info[str1['cid']][3] = "standby"
                     state = "standby"
                 else:
                     state = "running"
-            cost = self.calculate_cost(int(str1['cid']))
+            cost = self.calculate_cost(str1['cid'])
             dealed = {"method":"get","temp":temp,"state":state,"cost":cost}
         elif str1['method'] =="changed":
             if self.mode == "winter":
-                if int(str1['temp']) >= self.info[int(str1['cid'])][2]:
-                    self.info[int(str1['cid'])][2] = int(str1['temp'])
+                if (int(str1['temp'])+2) >= self.info[str1['cid']][2]:
+                    self.info[str1['cid']][0] = int(str1['temp'])
                     state = "standby"
                 else:
-                    self.info[int(str1['cid'])][2] = int(str1['temp'])
+                    self.info[str1['cid']][0] = int(str1['temp'])
                     state = "running"
                     self.key = 1
-                    self.info[int(str1['cid'])][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+                    self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             else:
-                if int(str1['temp']) <= self.info[int(str1['cid'])][2]:
-                    self.info[int(str1['cid'])][2] = int(str1['temp'])
+                if (int(str1['temp'])-2) <= self.info[str1['cid']][2]:
+                    self.info[str1['cid']][0] = int(str1['temp'])
                     state = "standby"
                 else:
-                    self.info[int(str1['cid'])][2] = int(str1['temp'])
+                    self.info[str1['cid']][0] = int(str1['temp'])
                     self.key = 1
                     state = "running"
-                    self.info[int(str1['cid'])][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+                    self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             dealed = {"method":"changed","state":state}
         elif str1['method'] =="shutdown":
-            if self.info[int(str1['cid'])] == "running":
+            if self.info[str1['cid']] == "running":
                 self.key = 0
-                self.info[int(str1['cid'])][3] = "shutdown"
-                self.info[int(str1['cid'])][0] = self.calculate_now_temperature(int(str1['cid']))
-                self.info[int(str1['cid'])][4] = self.calculate_cost(int(str1['cid']))
-                self.info[int(str1['cid'])][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+                self.info[str1['cid']][3] = "shutdown"
+                self.info[str1['cid']][0] = self.calculate_now_temperature(str1['cid'])
+                self.info[str1['cid']][4] = self.calculate_cost(str1['cid'])
+                self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             else:
-                self.info[int(str1['cid'])][3] = "shutdown"
+                self.info[str1['cid']][3] = "shutdown"
             dealed = {"method":"shutdown","result":"ok","state":"shutdown"}
         elif str1['method'] == "record":
             dealed = self.get_record_fromdatabase()#needs completed
