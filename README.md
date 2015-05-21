@@ -1,2 +1,3 @@
 # air_condition  
 2015/05/20 :smile: qmlClient 不能正确识别连续点击，待更正  
+2015/05/21 :smile: testInterval 正常工作   
