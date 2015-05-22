@@ -44,7 +44,7 @@ Window {
                 curTemp.text = (msg.temp).toString();
                 cost.text = (msg.cost).toString();
                 // no break !!
-            case "set":
+            case "set": case "changed":
                 if(msg.state === "standby") {
                     state.text = "待机";
                 } else if(msg.state === "running") {
@@ -332,7 +332,7 @@ Window {
 
             Label {
                 id: cost
-                text: qsTr("0.0")
+                text: qsTr("0")
                 font.pointSize: 12
                 verticalAlignment: Text.AlignVCenter
                 horizontalAlignment: Text.AlignLeft
@@ -446,7 +446,7 @@ Window {
     }
 
     Component.onCompleted: {
-        clientID = "123";
+        clientID = "xxx";
         fanSpeed = "medium";
         tBefore = 0;
         reset();
@@ -456,7 +456,7 @@ Window {
     function reset() {
         curTemp.text = 25;
         destTemp.text = 25;
-        cost.text = 0.0;
+        cost.text = 0;
         mode.text = "";
         radioMed.checked = true;
 
