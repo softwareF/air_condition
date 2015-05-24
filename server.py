@@ -7,11 +7,12 @@ import time
 import datetime
 
 class server:
-    def inti_mode(self):
+    def __init__(self):
         self.mode = input("Input the mode(winter/summer):")
-        self.running_num = input("Input the max running number:")
+        self.running_num = int(input("Input the max running number:"))
         self.info = {}
         self.key = 1
+        self.now_running_num = 0
         if self.mode == "winter":
             self.temp_max = 30
             self.temp_min = 25
@@ -75,6 +76,8 @@ class server:
             time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             self.info[str1['cid']] = self.info[str1['cid']] + [time_str]
             self.key = 1
+            self.now_running_num += 1
+            self.info[str1['cid']][3] = "running"
         elif str1['method'] =="set":
             self.dispatch()
             if self.mode == "winter":
@@ -84,6 +87,7 @@ class server:
                     state = "running"
                     self.key = 1
                     if self.info[str1['cid']][3] != "running":
+                        self.now_running_num += 1
                         self.info[str1['cid']][3] = "running"
                         self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
                 else:
@@ -91,6 +95,7 @@ class server:
                     self.info[str1['cid']][2] = int(str1['target'])
                     state = "standby"
                     if self.info[str1['cid']][3] != "standby":
+                        self.now_running_num -= 1
                         self.key = 0
                         self.info[str1['cid']][3] = "standby"
                         self.info[str1['cid']][0] = self.calculate_now_temperature(str1['cid'])
@@ -103,6 +108,7 @@ class server:
                     state = "running"
                     self.key = 1
                     if self.info[str1['cid']][3] != "running":
+                        self.now_running_num += 1
                         self.info[str1['cid']][3] = "running"
                         self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
                 else:
@@ -110,6 +116,7 @@ class server:
                     self.info[str1['cid']][2] = int(str1['target'])
                     state = "standby"
                     if self.info[str1['cid']][3] != "standby":
+                        self.now_running_num -= 1
                         self.key = 0
                         self.info[str1['cid']][3] = "standby"
                         self.info[str1['cid']][0] = self.calculate_now_temperature(str1['cid'])
@@ -123,12 +130,14 @@ class server:
                     cost = self.calculate_cost(str1['cid'])
                     self.info[str1['cid']][3] = "standby"
                     state = "standby"
+                    self.now_running_num -= 1
                 else:
                     state = "running"
             else:
                 if temp <= self.info[str1['cid']][2]:
                     self.info[str1['cid']][3] = "standby"
                     state = "standby"
+                    self.now_running_num -= 1
                 else:
                     state = "running"
             cost = self.calculate_cost(str1['cid'])
@@ -140,6 +149,8 @@ class server:
                     state = "standby"
                 else:
                     self.info[str1['cid']][0] = int(str1['temp'])
+                    self.info[str1['cid']][3] = "running"
+                    self.now_running_num += 1
                     state = "running"
                     self.key = 1
                     self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
@@ -150,11 +161,14 @@ class server:
                 else:
                     self.info[str1['cid']][0] = int(str1['temp'])
                     self.key = 1
+                    self.info[str1['cid']][3] = "running"
+                    self.now_running_num += 1
                     state = "running"
                     self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             dealed = {"method":"changed","state":state}
         elif str1['method'] =="shutdown":
             if self.info[str1['cid']] == "running":
+                self.now_running_num -= 1
                 self.key = 0
                 self.info[str1['cid']][3] = "shutdown"
                 self.info[str1['cid']][0] = self.calculate_now_temperature(str1['cid'])
@@ -172,19 +186,19 @@ class server:
     @asyncio.coroutine
     def hello(self,websocket, path):
         var = 1
-        while var==1:
-            decodejson = yield from websocket.recv()
-            rec = json.loads(decodejson)
-            print(rec)
-            dealed_str = self.judge(rec)
-            print(dealed_str)
-            encodejson = json.dumps(dealed_str)
-            yield from websocket.send(encodejson)
+        if self.now_running_num < self.running_num:
+            while var==1:
+                decodejson = yield from websocket.recv()
+                rec = json.loads(decodejson)
+                print(rec)
+                dealed_str = self.judge(rec)
+                print(dealed_str)
+                encodejson = json.dumps(dealed_str)
+                yield from websocket.send(encodejson)
 
 
 s1 = server()
 start_server = websockets.serve(s1.hello, 'localhost', 6666)
-s1.inti_mode()
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
