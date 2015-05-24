@@ -41,8 +41,8 @@ Window {
                 }
                 break;
             case "get":
-                curTemp.text = (msg.temp).toString();
-                cost.text = (msg.cost).toString();
+                curTemp.text = msg.temp;
+                cost.text = msg.cost;
                 // no break !!
             case "set": case "changed":
                 if(msg.state === "standby") {
@@ -199,15 +199,16 @@ Window {
             ExclusiveGroup {
                 id: exFan
                 onCurrentChanged: {
+                    console.debug(exFan.current.toString());
                     switch(exFan.current.toString())
                     {
-                    case "高":
+                    case radioHigh.toString():
                         fanSpeed = "high";
                         break;
-                    case "中":
+                    case radioMed.toString():
                         fanSpeed = "medium";
                         break;
-                    case "低":
+                    case radioLow.toString():
                         fanSpeed = "low";
                         break;
                     }
@@ -456,9 +457,8 @@ Window {
     function reset() {
         curTemp.text = 25;
         destTemp.text = 25;
-        cost.text = 0;
+        cost.text = 0.0;
         mode.text = "";
         radioMed.checked = true;
-
     }
 }
