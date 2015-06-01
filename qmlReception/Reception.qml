@@ -26,6 +26,10 @@ Window {
                 }
                 break;
             case "report":
+                textArea.text = "";
+                for(var i = 0; i < msg.data.length; ++i){
+                    textArea.append(msg.data[i]);
+                }
                 reportWindow.setVisible(true);
                 break;
             }
