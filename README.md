@@ -7,7 +7,7 @@
 >     * 退房请求 {'method': 'checkout', 'cid': 'xxx', 'from': "reception"}  
 >     * 返回     {'method': 'checkout', 'result': 'ok'}
 >     * 查看详单 {'method': 'report', 'cid': 'xxx'}  
->     * 返回     {'method': 'report', 'data': ["第一行内容", "第二行内容", …… ]}  
+>     * 返回     {'method': 'report', 'data': ['第一行内容', '第二行内容', …… ]}  
 
 ###因为技术原因所做的妥协
 >     * 当有超过预设的连接数的从机连接主机时，主机返回None(返回值同无主机时的返回值)。
