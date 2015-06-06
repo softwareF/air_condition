@@ -90,7 +90,8 @@ class server:
 
     @asyncio.coroutine
     def judge(self,str1,websocket):
-        yield from self.check_out(str1,websocket)
+        if str1['method'] not in ["register","recharge","record"]:
+            yield from self.check_out(str1,websocket)
         dealed = {}
         if str1['method'] =="handshake":
             if self.is_registed(str1):
@@ -203,15 +204,15 @@ class server:
             dealed = {"method":"checkout","result":"ok"}
             self.mailbox[str1['cid']] = {"method":"checkout","state":"shutdown"}
             print(self.mailbox)
-        elif str1['method'] == "regist":
+        elif str1['method'] == "register":
             if str1['id'] not in self.index.keys():
-                self.index[str1['id']] = [str1['name'],str1['cid'],str1['money']]
+                self.index[str1['id']] = [str1['name'],str1['cid']]
                 dealed = {"result":"ok","method":"regist"}
-            else
+            else:
                 dealed = {"result":"no","method":"regist"}
         elif str1['method'] == "recharge":
             if str1['id'] in self.index.keys():
-                self.index[str1['id']][2] += str1['money']
+                self.index[str1['id']] = self.index[str1['id']]+[str1['money']]
                 dealed = {"result":"ok","method":"recharge"}
             else:
                 dealed = {"result":"no","method":"recharge"}
