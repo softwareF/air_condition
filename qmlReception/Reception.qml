@@ -61,6 +61,7 @@ ApplicationWindow {
             case "register":
                 if(msg.result === "ok") {
                     messageDialog.show(qsTr("登记成功！"), StandardIcon.Information);
+                    textField1.text = textField2.text = textField3.text = "";
                 } else {
                     messageDialog.show(qsTr("登记失败！"), StandardIcon.Warning);
                 }
@@ -68,6 +69,7 @@ ApplicationWindow {
             case "recharge":
                 if(msg.result === "ok") {
                     messageDialog.show(qsTr("充值成功！"), StandardIcon.Information);
+                    textFieldID.text = textFieldMoney.text = "";
                 } else {
                     messageDialog.show(qsTr("充值失败！"), StandardIcon.Warning);
                 }
@@ -76,7 +78,7 @@ ApplicationWindow {
         onStatusChanged: {
             console.debug(socket.status);
             if(socket.status != WebSocket.Connecting && socket.status != WebSocket.Open)
-                ;//Qt.quit();
+                Qt.quit();
         }
         active: true
     }
@@ -402,6 +404,7 @@ ApplicationWindow {
             messageDialog.open();
         }
     }
+
     Window {
         id: reportWindow
         title: qsTr("详单")
