@@ -202,6 +202,9 @@ class server:
             dealed = self.get_record_fromdatabase()#needs completed
         elif str1['method'] == "checkout":
             dealed = {"method":"checkout","result":"ok"}
+            for key1,value1 in self.index.items():
+                if value1[1] is str1['cid']:
+                    del self.index[key1]
             self.mailbox[str1['cid']] = {"method":"checkout","state":"shutdown"}
             print(self.mailbox)
         elif str1['method'] == "register":
@@ -236,7 +239,7 @@ class server:
         self.flag = 1
 
 s1 = server()
-start_server = websockets.serve(s1.hello, 'localhost', 6666)
+start_server = websockets.serve(s1.hello, '0.0.0.0', 6666)
 
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
