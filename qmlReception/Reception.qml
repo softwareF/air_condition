@@ -157,7 +157,7 @@ ApplicationWindow {
             height: 23
             text: qsTr("客户编号")
             anchors.top: parent.top
-            anchors.topMargin: 60
+            anchors.topMargin: 55
             anchors.left: parent.left
             anchors.leftMargin: 50
             verticalAlignment: Text.AlignVCenter
@@ -170,7 +170,7 @@ ApplicationWindow {
             height: 23
             text: qsTr("客户名称")
             anchors.top: label1.bottom
-            anchors.topMargin: 15
+            anchors.topMargin: 10
             anchors.left: parent.left
             anchors.leftMargin: 50
             verticalAlignment: Text.AlignVCenter
@@ -183,7 +183,20 @@ ApplicationWindow {
             height: 23
             text: qsTr("房间编号")
             anchors.top: label2.bottom
-            anchors.topMargin: 15
+            anchors.topMargin: 10
+            anchors.left: parent.left
+            anchors.leftMargin: 50
+            horizontalAlignment: Text.AlignHCenter
+            verticalAlignment: Text.AlignVCenter
+        }
+
+        Label {
+            id: label4
+            width: 75
+            height: 23
+            text: qsTr("预存金额")
+            anchors.top: label3.bottom
+            anchors.topMargin: 10
             anchors.left: parent.left
             anchors.leftMargin: 50
             horizontalAlignment: Text.AlignHCenter
@@ -192,15 +205,14 @@ ApplicationWindow {
 
         TextField {
             id: textField1
-            x: 260
             width: 125
             height: 23
             anchors.top: parent.top
-            anchors.topMargin: 60
+            anchors.topMargin: 55
             anchors.right: parent.right
             anchors.rightMargin: 50
             onTextChanged: {
-                if(textField1.text.trim().length > 0 && textField2.text.trim().length > 0 && textField3.text.trim().length > 0)
+                if(textField1.text.trim().length > 0 && textField2.text.trim().length > 0 && textField3.text.trim().length > 0 && textField4.text.trim().length > 0)
                     buttonRegister.enabled = true;
                 else
                     buttonRegister.enabled = false;
@@ -209,15 +221,14 @@ ApplicationWindow {
 
         TextField {
             id: textField2
-            x: 260
             width: 125
             height: 23
             anchors.top: textField1.bottom
-            anchors.topMargin: 15
+            anchors.topMargin: 10
             anchors.right: parent.right
             anchors.rightMargin: 50
             onTextChanged: {
-                if(textField1.text.trim().length > 0 && textField2.text.trim().length > 0 && textField3.text.trim().length > 0)
+                if(textField1.text.trim().length > 0 && textField2.text.trim().length > 0 && textField3.text.trim().length > 0 && textField4.text.trim().length > 0)
                     buttonRegister.enabled = true;
                 else
                     buttonRegister.enabled = false;
@@ -225,18 +236,31 @@ ApplicationWindow {
         }
 
         TextField {
-
             id: textField3
-            x: 125
-            y: 0
             width: 125
             height: 23
             anchors.top: textField2.bottom
-            anchors.topMargin: 15
+            anchors.topMargin: 10
             anchors.right: parent.right
             anchors.rightMargin: 50
             onTextChanged: {
-                if(textField1.text.trim().length > 0 && textField2.text.trim().length > 0 && textField3.text.trim().length > 0)
+                if(textField1.text.trim().length > 0 && textField2.text.trim().length > 0 && textField3.text.trim().length > 0 && textField4.text.trim().length > 0)
+                    buttonRegister.enabled = true;
+                else
+                    buttonRegister.enabled = false;
+            }
+        }
+
+        TextField {
+            id: textField4
+            width: 125
+            height: 23
+            anchors.top: textField3.bottom
+            anchors.topMargin: 10
+            anchors.right: parent.right
+            anchors.rightMargin: 50
+            onTextChanged: {
+                if(textField1.text.trim().length > 0 && textField2.text.trim().length > 0 && textField3.text.trim().length > 0 && textField4.text.trim().length > 0)
                     buttonRegister.enabled = true;
                 else
                     buttonRegister.enabled = false;
@@ -250,18 +274,20 @@ ApplicationWindow {
             text: qsTr("登记")
             enabled: false
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 65
+            anchors.bottomMargin: 60
             anchors.right: parent.right
             anchors.rightMargin: 50
             onClicked: {
                 var Id = textField1.text;
                 var Name = textField2.text;
                 var Cid = textField3.text
+                var Money = textField4.text
                 var register = {
                     method: "register",
                     id: Id,
                     name: Name,
-                    cid: Cid
+                    cid: Cid,
+                    money: Money
                 }
                 socket.sendTextMessage(JSON.stringify(register));
             }
@@ -273,7 +299,7 @@ ApplicationWindow {
             y: 212
             text: qsTr("返回")
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 65
+            anchors.bottomMargin: 60
             anchors.left: parent.left
             anchors.leftMargin: 50
             onClicked: {
@@ -295,7 +321,7 @@ ApplicationWindow {
             height: 23
             text: qsTr("客户编号")
             anchors.top: parent.top
-            anchors.topMargin: 60
+            anchors.topMargin: 88
             anchors.left: parent.left
             anchors.leftMargin: 50
             verticalAlignment: Text.AlignVCenter
@@ -308,7 +334,7 @@ ApplicationWindow {
             height: 23
             text: qsTr("充值金额")
             anchors.top: labelID.bottom
-            anchors.topMargin: 15
+            anchors.topMargin: 10
             anchors.left: parent.left
             anchors.leftMargin: 50
             verticalAlignment: Text.AlignVCenter
@@ -321,7 +347,7 @@ ApplicationWindow {
             width: 125
             height: 23
             anchors.top: parent.top
-            anchors.topMargin: 60
+            anchors.topMargin: 88
             anchors.right: parent.right
             anchors.rightMargin: 50
             onTextChanged: {
@@ -338,7 +364,7 @@ ApplicationWindow {
             width: 125
             height: 23
             anchors.top: textFieldID.bottom
-            anchors.topMargin: 15
+            anchors.topMargin: 10
             anchors.right: parent.right
             anchors.rightMargin: 50
             onTextChanged: {
@@ -356,7 +382,7 @@ ApplicationWindow {
             text: qsTr("充值")
             enabled: false
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 65
+            anchors.bottomMargin: 60
             anchors.right: parent.right
             anchors.rightMargin: 50
             onClicked: {
@@ -377,7 +403,7 @@ ApplicationWindow {
             y: 212
             text: qsTr("返回")
             anchors.bottom: parent.bottom
-            anchors.bottomMargin: 65
+            anchors.bottomMargin: 60
             anchors.left: parent.left
             anchors.leftMargin: 50
             onClicked: {
