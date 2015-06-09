@@ -403,7 +403,7 @@ Window {
     /*** Timer ***/
     Timer {
         id: repeatTimer
-        interval: 1000 * 10
+        interval: 1000 * 60
         repeat: true
         onTriggered: {
             var getReq = {
@@ -417,7 +417,7 @@ Window {
 
     Timer {
         id: autoChange
-        interval: 1000 * 10
+        interval: 1000 * 60 * 2
         repeat: true
         onTriggered: {
             var tmp = parseInt(curTemp.text);
@@ -432,7 +432,7 @@ Window {
 
     Timer {
         id: testInterval
-        interval: 1000
+        interval: 1000 * 10
         repeat: false
         onTriggered: {
             var setReq = {
@@ -447,7 +447,7 @@ Window {
     }
 
     Component.onCompleted: {
-        clientID = "xxx";
+        clientID = "305f";
         fanSpeed = "medium";
         tBefore = 0;
         reset();
