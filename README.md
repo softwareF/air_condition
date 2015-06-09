@@ -4,6 +4,7 @@
 2015/05/25 :smile: 增加前台从机  
 2015/05/28 :qyyy: 可以正确识别结账功能
 2015/06/06 :qyyy: 实现跨网通信
+2015/06/06 :sola: V2增加数据库部分
 ###JSON内容
 >     * 退房请求 {'method': 'checkout', 'cid': 'xxx', 'from': "reception"}  
 >     * 返回     {'method': 'checkout', 'result': 'ok'}
