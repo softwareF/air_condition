@@ -61,7 +61,7 @@ ApplicationWindow {
             case "register":
                 if(msg.result === "ok") {
                     messageDialog.show(qsTr("登记成功！"), StandardIcon.Information);
-                    textField1.text = textField2.text = textField3.text = "";
+                    textField1.text = textField2.text = textField3.text = textField4.text = "";
                 } else {
                     messageDialog.show(qsTr("登记失败！"), StandardIcon.Warning);
                 }
