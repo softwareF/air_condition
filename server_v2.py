@@ -9,7 +9,7 @@ import pymysql
 class server:
     def __init__(self):
         self.mode = input("Input the mode(winter/summer):")
-        self.running_num = int(input("Input the max running number:"))
+        self.running_num = int(input("Input the max running number:"))+1
         self.info = {}
         self.mailbox = {}
         self.index = {}
@@ -88,6 +88,7 @@ class server:
 
     def get_record_fromdatabase(self):
         pass
+
     def send_to_database(self,str1):
         if str1['method'] =="handshake":
             time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
@@ -124,7 +125,7 @@ class server:
             time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             database_exec = "insert into user_data (user_id,optime,room_id,username,money)values('"+str(str1['id'])+"','"+str(time_str)+"','"+str(str1['cid'])+"','"+str(str1['name'])+"',"+str(str1['money'])+");"
             print(database_exec)
-            sta=cur.execute(database_exec)
+            #sta=cur.execute(database_exec)
             conn.commit()
         elif str1['method'] == "recharge":
             time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
@@ -133,6 +134,7 @@ class server:
             print(database_exec)
             sta=cur.execute(database_exec)
         conn.commit()
+
     @asyncio.coroutine
     def judge(self,str1,websocket):
         if str1['method'] not in ["register","recharge","record"]:
@@ -254,21 +256,27 @@ class server:
             report_text += ']'
             dealed = {"method":"report","data":report_text}
         elif str1['method'] == "checkout":
-            dealed = {"method":"checkout","result":"ok"}
+            tflag = 0
             for key1,value1 in self.index.items():
-                if value1[1] is str1['cid']:
-                    del self.index[key1]
-            self.mailbox[str1['cid']] = {"method":"checkout","state":"shutdown"}
-            print(self.mailbox)
+                if value1[1] == str1['cid']:
+                    if str1['cid'] in self.info.keys():
+                        del self.info[str1['cid']]
+                        self.mailbox[str1['cid']] = {"method":"checkout","state":"shutdown"}
+                    dealed = {"method":"checkout","result":"ok"}
+                    tflag = 1
+            if tflag is 0:
+                dealed = {"method":"checkout","result":"no"}
+            else:
+                del self.index[key1]
         elif str1['method'] == "register":
             if str1['id'] not in self.index.keys():
-                self.index[str1['id']] = [str1['name'],str1['cid']]
+                self.index[str1['id']] = [str1['name'],str1['cid'],str1['money']]
                 dealed = {"result":"ok","method":"regist"}
             else:
                 dealed = {"result":"no","method":"regist"}
         elif str1['method'] == "recharge":
             if str1['id'] in self.index.keys():
-                self.index[str1['id']] = self.index[str1['id']]+[str1['money']]
+                self.index[str1['id']][2] = str(int([str1['money']])+int(self.index[str1['id']][2]))
                 dealed = {"result":"ok","method":"recharge"}
             else:
                 dealed = {"result":"no","method":"recharge"}
@@ -285,9 +293,7 @@ class server:
                     rec = json.loads(decodejson)
                     print(rec)
                     dealed_str = yield from self.judge(rec,websocket)
-                    print(dealed_str)
-                    print(1)
-                    self.send_to_database(rec)
+                    #self.send_to_database(rec)
                     print(dealed_str)
                     encodejson = json.dumps(dealed_str)
                     if self.flag:
@@ -296,13 +302,10 @@ class server:
 
 s1 = server()
 start_server = websockets.serve(s1.hello, '0.0.0.0', 6666)
-#sql_name = input("Input the name of database:")
-#sql_username = input("Input the username of database:")
-#sql_password = input("Input the password of database:")
-sql_name = "hotel_manage"
-sql_username = "root"
-sql_password = "2525698"
-conn=pymysql.connect(host='localhost',user=sql_username,passwd=sql_password,db=sql_name,charset='utf8')
-cur=conn.cursor()
+#sql_name = "hotel_manage"
+#sql_username = "root"
+#sql_password = "2525698"
+#conn=pymysql.connect(host='localhost',user=sql_username,passwd=sql_password,db=sql_name,charset='utf8')
+#cur=conn.cursor()
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
