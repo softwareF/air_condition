@@ -54,18 +54,18 @@ class server:
         if self.info[cid][3] == "running":
             if self.mode == "winter":
                 if self.info[cid][1] == "high":
-                    now_temperature = self.info[cid][0] + self.calculate_time(cid)/10
-                elif self.info[cid][1] == "medium":
-                    now_temperature = self.info[cid][0] + self.calculate_time(cid)/15
-                elif self.info[cid][1] == "low":
                     now_temperature = self.info[cid][0] + self.calculate_time(cid)/20
+                elif self.info[cid][1] == "medium":
+                    now_temperature = self.info[cid][0] + self.calculate_time(cid)/30
+                elif self.info[cid][1] == "low":
+                    now_temperature = self.info[cid][0] + self.calculate_time(cid)/60
             elif self.mode == "summer":
                 if self.info[cid][1] == "high":
-                    now_temperature = self.info[cid][0] - self.calculate_time(cid)/10
-                elif self.info[cid][1] == "medium":
-                    now_temperature = self.info[cid][0] - self.calculate_time(cid)/15
-                elif self.info[cid][1] == "low":
                     now_temperature = self.info[cid][0] - self.calculate_time(cid)/20
+                elif self.info[cid][1] == "medium":
+                    now_temperature = self.info[cid][0] - self.calculate_time(cid)/30
+                elif self.info[cid][1] == "low":
+                    now_temperature = self.info[cid][0] - self.calculate_time(cid)/60
         else:
             now_temperature = self.info[cid][0]
         self.info[cid][0] = now_temperature
@@ -75,11 +75,11 @@ class server:
         if self.info[cid][3] == "running":
             timezone = (datetime.datetime.now()-datetime.datetime.strptime(self.info[cid][5],'%Y-%m-%d %H:%M:%S')).seconds
             if self.info[cid][1] == "high":
-                cost = self.info[cid][4] + timezone/10
+                cost = self.info[cid][4] + timezone/20
             elif self.info[cid][1] == "medium":
-                cost = self.info[cid][4] + timezone/12
+                cost = self.info[cid][4] + timezone/30
             elif self.info[cid][1] == "low":
-                cost = self.info[cid][4] + timezone/15
+                cost = self.info[cid][4] + timezone/60
         else:
             cost = self.info[cid][4]
         self.info[cid][4] = cost
