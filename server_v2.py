@@ -4,6 +4,7 @@ import asyncio
 import websockets
 import json
 import datetime
+import pymysql
 
 class server:
     def __init__(self):
@@ -87,7 +88,51 @@ class server:
 
     def get_record_fromdatabase(self):
         pass
+    def send_to_database(self,str1):
+        if str1['method'] =="handshake":
+            time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+            database_exec = "insert into running_status (room_id,optime,optype,req_temp_start,req_temp_end,speed)values('" +str(str1['cid'])+"','"+str(time_str)+"','on','"+str(str1['temp'])+"','"+str(str1['target'])+"','"+str1['speed']+"');"
+            print(database_exec)
+            sta=cur.execute(database_exec)
+        elif str1['method'] =="set":
+            time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+            database_exec = "insert into running_status (room_id,optime,optype,req_temp_end,speed)values('"+str(str1['cid'])+"','"+str(time_str)+"','set','"+str(str1['target'])+"','"+str1['speed']+"');"
+            print(database_exec)
+            sta=cur.execute(database_exec)
+        elif str1['method'] =="get":
+            pass
+        elif str1['method'] =="changed":
+            time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+            database_exec = "insert into running_status (room_id,optime,optype,req_temp_start)values('"+str(str1['cid'])+"','"+str(time_str)+"','changed','"+str(str1['temp'])+"');"
+            print(database_exec)
+            sta=cur.execute(database_exec)
+        elif str1['method'] =="shutdown":
+            time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+            database_exec = "insert into running_status (room_id,optime,optype)values('"+str(str1['cid'])+"','"+str(time_str)+"','off');"
+            print(database_exec)
+            sta=cur.execute(database_exec)
+        elif str1['method'] == "report":
+           #database_exec = "select * from running_status where (room_id ="+str1['cid'] +");"
+           #print(database_exec)
+           #cur.execute(database_exec)
+           #for each in cur:
+           #    print(each)
+           pass
+        elif str1['method'] == "checkout":
+            pass
+        elif str1['method'] == "register":
+            time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+            database_exec = "insert into user_data (user_id,optime,room_id,username,money)values('"+str(str1['id'])+"','"+str(time_str)+"','"+str(str1['cid'])+"','"+str(str1['name'])+"',"+str(str1['money'])+");"
+            print(database_exec)
+            sta=cur.execute(database_exec)
+            conn.commit()
+        elif str1['method'] == "recharge":
+            time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+            database_exec = "update user_data set money = money +"+str(str1['money'])+" where user_id ="+str(str1['id'])+";"
 
+            print(database_exec)
+            sta=cur.execute(database_exec)
+        conn.commit()
     @asyncio.coroutine
     def judge(self,str1,websocket):
         if str1['method'] not in ["register","recharge","record"]:
@@ -198,8 +243,16 @@ class server:
             else:
                 self.info[str1['cid']][3] = "shutdown"
             dealed = {"method":"shutdown","result":"ok","state":"shutdown"}
-        elif str1['method'] == "record":
-            dealed = self.get_record_fromdatabase()#needs completed
+        elif str1['method'] == "report":
+            database_exec = "select * from running_status where (room_id ='"+str1['cid'] +"');"
+            print(database_exec)
+            cur.execute(database_exec)
+            report_text = '['
+            for r in cur.fetchall():
+                report_text += str(r)
+                report_text += ','
+            report_text += ']'
+            dealed = {"method":"report","data":report_text}
         elif str1['method'] == "checkout":
             dealed = {"method":"checkout","result":"ok"}
             for key1,value1 in self.index.items():
@@ -233,6 +286,9 @@ class server:
                     print(rec)
                     dealed_str = yield from self.judge(rec,websocket)
                     print(dealed_str)
+                    print(1)
+                    self.send_to_database(rec)
+                    print(dealed_str)
                     encodejson = json.dumps(dealed_str)
                     if self.flag:
                         yield from websocket.send(encodejson)
@@ -240,6 +296,13 @@ class server:
 
 s1 = server()
 start_server = websockets.serve(s1.hello, '0.0.0.0', 6666)
-
+#sql_name = input("Input the name of database:")
+#sql_username = input("Input the username of database:")
+#sql_password = input("Input the password of database:")
+sql_name = "hotel_manage"
+sql_username = "root"
+sql_password = "2525698"
+conn=pymysql.connect(host='localhost',user=sql_username,passwd=sql_password,db=sql_name,charset='utf8')
+cur=conn.cursor()
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
