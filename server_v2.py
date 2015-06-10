@@ -15,6 +15,11 @@ class server:
         self.index = {}
         self.flag = 1
         self.now_running_num = 0
+        self.regflg = 0
+        self.gettemp = 0
+        self.reportflg = 0
+        self.finished = 0
+        self.now_cost = 0
         if self.mode == "winter":
             self.temp_max = 30
             self.temp_min = 25
@@ -90,6 +95,12 @@ class server:
         pass
 
     def send_to_database(self,str1):
+        if self.finished == 1:
+            time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+            database_exec = "insert into running_status (room_id,optime,optype,req_temp_start,req_temp_end,speed)values('" +str(str1['cid'])+"','"+str(time_str)+"','finish','"+str(self.info[str1['cid']][0])+"','"+str(self.info[str1['cid']][2])+"','"+str(self.info[str1['cid']][1])+"');"
+            print(database_exec)
+            sta=cur.execute(database_exec)
+            self.finished = 0
         if str1['method'] =="handshake":
             time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             database_exec = "insert into running_status (room_id,optime,optype,req_temp_start,req_temp_end,speed)values('" +str(str1['cid'])+"','"+str(time_str)+"','on','"+str(str1['temp'])+"','"+str(str1['target'])+"','"+str1['speed']+"');"
@@ -97,11 +108,14 @@ class server:
             sta=cur.execute(database_exec)
         elif str1['method'] =="set":
             time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-            database_exec = "insert into running_status (room_id,optime,optype,req_temp_end,speed)values('"+str(str1['cid'])+"','"+str(time_str)+"','set','"+str(str1['target'])+"','"+str1['speed']+"');"
+            database_exec = "insert into running_status (room_id,optime,optype,req_temp_end,speed,req_temp_start)values('"+str(str1['cid'])+"','"+str(time_str)+"','set','"+str(str1['target'])+"','"+str1['speed']+"',"+str(self.info[str1['cid']][0])+");"
             print(database_exec)
             sta=cur.execute(database_exec)
         elif str1['method'] =="get":
-            pass
+            time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+            database_exec = "insert into running_status (room_id,optime,optype,req_temp_start)values('"+str(str1['cid'])+"','"+str(time_str)+"','get',"+str(self.gettemp)+");"
+            print(database_exec)
+            sta=cur.execute(database_exec)
         elif str1['method'] =="changed":
             time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             database_exec = "insert into running_status (room_id,optime,optype,req_temp_start)values('"+str(str1['cid'])+"','"+str(time_str)+"','changed','"+str(str1['temp'])+"');"
@@ -113,30 +127,48 @@ class server:
             print(database_exec)
             sta=cur.execute(database_exec)
         elif str1['method'] == "report":
-           #database_exec = "select * from running_status where (room_id ="+str1['cid'] +");"
-           #print(database_exec)
-           #cur.execute(database_exec)
-           #for each in cur:
-           #    print(each)
-           pass
-        elif str1['method'] == "checkout":
-            pass
-        elif str1['method'] == "register":
-            time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-            database_exec = "insert into user_data (user_id,optime,room_id,username,money)values('"+str(str1['id'])+"','"+str(time_str)+"','"+str(str1['cid'])+"','"+str(str1['name'])+"',"+str(str1['money'])+");"
+            database_exec = "select * from running_status where (room_id ='"+str1['cid'] +"' and (optype = 'set' or optype = 'finish' or optype = 'on' or optype = 'off'));"
             print(database_exec)
-            #sta=cur.execute(database_exec)
+            cur.execute(database_exec)
+            report_list = []
+            for r in cur.fetchall():
+                report_text = str(r)
+                report_list += [report_text]
+            dealed = {"method":"report","data":report_list,"result":"ok"}
+            return dealed
+        elif str1['method'] == "checkout":
+            database_exec = "delete from user_data where (room_id ='"+str1['cid'] +"');"
+            print(database_exec)
+            cur.execute(database_exec)
             conn.commit()
+        elif str1['method'] == "register":
+            if self.regflg == 1:
+                time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+                database_exec = "insert into user_data (user_id,optime,room_id,username,money)values('"+str(str1['id'])+"','"+str(time_str)+"','"+str(str1['cid'])+"','"+str(str1['name'])+"',"+str(str1['money'])+");"
+                print(database_exec)
+                sta=cur.execute(database_exec)
+                conn.commit()
         elif str1['method'] == "recharge":
             time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             database_exec = "update user_data set money = money +"+str(str1['money'])+" where user_id ="+str(str1['id'])+";"
-
             print(database_exec)
             sta=cur.execute(database_exec)
+        database_exec = "select user_id from user_data where room_id = '"+str(str1['cid'])+"';"
+        sta = cur.execute(database_exec)
+        now_id = ''
+        for each in cur:
+           now_id = each[0]
+        if now_id == '':
+            return
+        now_money = int(self.index[now_id][2]) - self.now_cost
+        database_exec = "update user_data set money = "+str(now_money)+" where user_id ="+str(now_id)+";"
+        print(database_exec)
+        sta=cur.execute(database_exec)
         conn.commit()
-
+        return
     @asyncio.coroutine
     def judge(self,str1,websocket):
+        self.reportflg = 0
         if str1['method'] not in ["register","recharge","record"]:
             yield from self.check_out(str1,websocket)
         dealed = {}
@@ -192,33 +224,41 @@ class server:
             dealed = {"method":"set","state":state}
         elif str1['method'] =="get":
             temp = self.calculate_now_temperature(str1['cid'])
+            self.gettemp = temp
             if self.mode == "winter":
                 if temp >= self.info[str1['cid']][2]:
+                    self.finished = 1
                     cost = self.calculate_cost(str1['cid'])
                     self.info[str1['cid']][3] = "standby"
                     state = "standby"
                     self.now_running_num -= 1
                 else:
+                    self.finished = 0
                     state = "running"
             else:
                 if temp <= self.info[str1['cid']][2]:
+                    self.finished = 1
                     self.info[str1['cid']][3] = "standby"
                     state = "standby"
                     self.now_running_num -= 1
                 else:
+                    self.finished = 0
                     state = "running"
             cost = self.calculate_cost(str1['cid'])
             for (tkey,tvalue) in self.index.items():
                 if str1['cid'] == tvalue[1]:
                     if cost >= int(tvalue[2]):
                         self.flag = 0
+            self.now_cost = cost
             dealed = {"method":"get","temp":temp,"state":state,"cost":cost}
         elif str1['method'] =="changed":
             if self.mode == "winter":
                 if (int(str1['temp'])+2) >= self.info[str1['cid']][2]:
+
                     self.info[str1['cid']][0] = int(str1['temp'])
                     state = "standby"
                 else:
+
                     self.info[str1['cid']][0] = int(str1['temp'])
                     self.info[str1['cid']][3] = "running"
                     self.now_running_num += 1
@@ -226,9 +266,11 @@ class server:
                     self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             else:
                 if (int(str1['temp'])-2) <= self.info[str1['cid']][2]:
+
                     self.info[str1['cid']][0] = int(str1['temp'])
                     state = "standby"
                 else:
+
                     self.info[str1['cid']][0] = int(str1['temp'])
                     self.info[str1['cid']][3] = "running"
                     self.now_running_num += 1
@@ -246,15 +288,7 @@ class server:
                 self.info[str1['cid']][3] = "shutdown"
             dealed = {"method":"shutdown","result":"ok","state":"shutdown"}
         elif str1['method'] == "report":
-            database_exec = "select * from running_status where (room_id ='"+str1['cid'] +"');"
-            print(database_exec)
-            cur.execute(database_exec)
-            report_text = '['
-            for r in cur.fetchall():
-                report_text += str(r)
-                report_text += ','
-            report_text += ']'
-            dealed = {"method":"report","data":report_text}
+            self.reportflg = 1
         elif str1['method'] == "checkout":
             tflag = 0
             for key1,value1 in self.index.items():
@@ -271,9 +305,11 @@ class server:
         elif str1['method'] == "register":
             if str1['id'] not in self.index.keys():
                 self.index[str1['id']] = [str1['name'],str1['cid'],str1['money']]
-                dealed = {"result":"ok","method":"regist"}
+                dealed = {"result":"ok","method":"register"}
+                self.regflg = 1
             else:
-                dealed = {"result":"no","method":"regist"}
+                dealed = {"result":"no","method":"register"}
+                self.regflg = 0
         elif str1['method'] == "recharge":
             if str1['id'] in self.index.keys():
                 self.index[str1['id']][2] = str(int([str1['money']])+int(self.index[str1['id']][2]))
@@ -293,7 +329,10 @@ class server:
                     rec = json.loads(decodejson)
                     print(rec)
                     dealed_str = yield from self.judge(rec,websocket)
-                    #self.send_to_database(rec)
+                    if self.reportflg == 1:
+                        dealed_str = self.send_to_database(rec)
+                    else:
+                        self.send_to_database(rec)
                     print(dealed_str)
                     encodejson = json.dumps(dealed_str)
                     if self.flag:
@@ -302,10 +341,11 @@ class server:
 
 s1 = server()
 start_server = websockets.serve(s1.hello, '0.0.0.0', 6666)
-#sql_name = "hotel_manage"
-#sql_username = "root"
-#sql_password = "2525698"
-#conn=pymysql.connect(host='localhost',user=sql_username,passwd=sql_password,db=sql_name,charset='utf8')
-#cur=conn.cursor()
+sql_name = "hotel_manage"
+sql_username = "root"
+sql_password = "2525698"
+conn=pymysql.connect(host='localhost',user=sql_username,passwd=sql_password,db=sql_name,charset='utf8')
+cur=conn.cursor()
+sta=cur.execute("delete from user_data")
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
