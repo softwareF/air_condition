@@ -328,10 +328,10 @@ class server:
                     rec = json.loads(decodejson)
                     print(rec)
                     dealed_str = self.judge(rec,websocket)
-                    #if self.reportflg == 1:
-                        #dealed_str = self.send_to_database(rec)
-                    #else:
-                        #self.send_to_database(rec)
+                    if self.reportflg == 1:
+                        dealed_str = self.send_to_database(rec)
+                    else:
+                        self.send_to_database(rec)
                     print(dealed_str)
                     encodejson = json.dumps(dealed_str)
                     if self.flag:
@@ -339,12 +339,12 @@ class server:
         self.flag = 1
 
 s1 = server()
-
-#sql_name = "hotel_manage"
-#sql_username = "root"
-#sql_password = "2525698"
-#conn=pymysql.connect(host='localhost',user=sql_username,passwd=sql_password,db=sql_name,charset='utf8')
-#cur=conn.cursor()
-#sta=cur.execute("delete from user_data")
+start_server = websockets.serve(s1.hello, '0.0.0.0', 6666)
+sql_name = "hotel_manage"
+sql_username = "root"
+sql_password = "2525698"
+conn=pymysql.connect(host='localhost',user=sql_username,passwd=sql_password,db=sql_name,charset='utf8')
+cur=conn.cursor()
+sta=cur.execute("delete from user_data")
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
