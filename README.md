@@ -2,10 +2,10 @@
 2015/05/20 :smile: qmlClient 不能正确识别连续点击，待更正  
 2015/05/21 :smile: testInterval 正常工作   
 2015/05/25 :smile: 增加前台从机  
-2015/05/28 :qyyy: 可以正确识别结账功能
-2015/06/06 :qyyy: 实现跨网通信
-2015/06/06 :sola: V2增加数据库部分
-2015/06/12 :qyyy: 合并V1、V2版本，新增计时器功能的特殊客户端client.py。新增链接库
+2015/05/28 :qyyy: 可以正确识别结账功能  
+2015/06/06 :qyyy: 实现跨网通信  
+2015/06/06 :sola: V2增加数据库部分  
+2015/06/12 :qyyy: 合并V1、V2版本，新增计时器功能的特殊客户端client.py。新增链接库  
 ###JSON内容
 >     * 退房请求 {'method': 'checkout', 'cid': 'xxx', 'from': "reception"}  
 >     * 返回     {'method': 'checkout', 'result': 'ok'}
