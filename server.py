@@ -119,16 +119,35 @@ class server:
             database_exec = "select * from running_status where (room_id ='"+str1['cid'] +"' and (optype = 'set' or optype = 'finish' or optype = 'on' or optype = 'off'));"
             print(database_exec)
             cur.execute(database_exec)
-            report_list = []
+            report_text = '房间号\t时间                \t操作类型\t当前温度 \t设定温度 \t风速'
+            report_list = [report_text]
+            report_text = ''
             for r in cur.fetchall():
-                report_text = str(r)
+                for rr in r:
+                    if rr == 'on':
+                        rr = '开机'
+                    if rr == 'set':
+                        rr = '设定'
+                    if rr == 'off':
+                        rr = '关机'
+                    if rr == 'finish':
+                        rr = '工作完成'
+                    report_text += str(rr)
+                    report_text += '\t'
+                #report_text = str(r)
                 report_list += [report_text]
+                report_text = ''
             dealed = {"method":"report","data":report_list,"result":"ok"}
             return dealed
         elif str1['method'] == "checkout":
             database_exec = "delete from user_data where (room_id ='"+str1['cid'] +"');"
             print(database_exec)
             cur.execute(database_exec)
+            conn.commit()
+            time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+            database_exec = "insert into running_status (room_id,optime,optype)values('"+str(str1['cid'])+"','"+str(time_str)+"','off');"
+            print(database_exec)
+            sta=cur.execute(database_exec)
             conn.commit()
         elif str1['method'] == "register":
             if self.regflg == 1:
@@ -346,5 +365,6 @@ sql_password = "2525698"
 conn=pymysql.connect(host='localhost',user=sql_username,passwd=sql_password,db=sql_name,charset='utf8')
 cur=conn.cursor()
 sta=cur.execute("delete from user_data")
+sta=cur.execute("delete from running_status")
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
