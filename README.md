@@ -5,21 +5,27 @@
 2015/05/28 :qyyy: 可以正确识别结账功能  
 2015/06/06 :qyyy: 实现跨网通信  
 2015/06/06 :sola: V2增加数据库部分  
-2015/06/12 :qyyy: 合并V1、V2版本，新增计时器功能的特殊客户端client.py。新增链接库  
+2015/06/12 :qyyy: 合并V1、V2版本，新增计时器功能的特殊客户端client.py。新增链接库
+2015/06/14 :qyyy: 实现调度策略，待测试
 ###JSON内容
->     * 退房请求 {'method': 'checkout', 'cid': 'xxx', 'from': "reception"}  
+>     * 退房请求 前台发送 {'method': 'checkout', 'cid': 'xxx', 'from': "reception"}  
 >     * 返回     {'method': 'checkout', 'result': 'ok'}
->     * 查看详单 {'method': 'report', 'cid': 'xxx'}  
+>     * 查看详单 前台发送 {'method': 'report', 'cid': 'xxx'}  
 >     * 返回     {'method': 'report', 'result': 'ok', 'data': ['第一行内容', '第二行内容', …… ]}  
->     * 登记请求 {'method': 'register', 'id': 'xxx', 'name': 'xxx', 'cid': 'xxx', 'money': 'xxx'}
+>     * 登记请求 前台发送 {'method': 'register', 'id': 'xxx', 'name': 'xxx', 'cid': 'xxx', 'money': 'xxx'}
 >     * 返回     {'method': 'register', 'result': 'ok'}
->     * 充值请求 {'method': 'recharge', 'id': 'xxx', 'money': 'xxx'}
+>     * 充值请求 前台发送 {'method': 'recharge', 'id': 'xxx', 'money': 'xxx'}
 >     * 返回     {'method': 'recharge', 'result': 'ok'}
->     * 计时     {'method': 'timer'}
+>     * 计时     计时器发送 {'method': 'timer'}
+>     * 返回     无
+>     * 房间状态 服务器发送 {'cid':'xxx','speed':'xxx','target':'xxx','state':'xxx','cost':'xxx','rest':'xxx'}
 >     * 返回     无
 
-###因为技术原因所做的妥协
->     * 没有进行优先级调度
+###bugs
+>     * 开机后10S会自动发一个set包，没有必要
+>     * 结账后偶尔会发一个set包，没找到原因
+>     * int型温度和float型花费之间存在不匹配问题，待完善
+>     * 未完待续
 
 
 ###版本声明
