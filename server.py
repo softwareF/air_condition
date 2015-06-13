@@ -4,12 +4,13 @@ import asyncio
 import websockets
 import json
 import datetime
+import queue
 import pymysql
 
 class server:
     def __init__(self):
         self.mode = input("Input the mode(winter/summer):")
-        self.running_num = int(input("Input the max running number:"))+2
+        self.running_num = int(input("Input the max running number:"))
         self.info = {}
         self.index = {}
         self.socket = {}
@@ -20,6 +21,7 @@ class server:
         self.reportflg = 0
         self.finished = 0
         self.now_cost = 0
+        self.myqueue = queue.PriorityQueue()
         if self.mode == "winter":
             self.temp_max = 30
             self.temp_min = 25
@@ -31,9 +33,6 @@ class server:
         if str1['cid'] not in self.socket.keys():
             self.socket[str1['cid']] = websocket
 
-    def asyn(self):
-        pass
-
     def is_registed(self,str1):
         for key,value in self.index.items():
             if str1['cid'] == value[1]:
@@ -43,45 +42,36 @@ class server:
     def record(self,cid,temp,speed,target,state,cost):
         self.info[cid] = [temp,speed,target,state,cost]
 
-    def calculate_time(self,cid):#maybe useful or useless
+    def calculate_time(self,cid):
         past_time = datetime.datetime.strptime(self.info[cid][5],'%Y-%m-%d %H:%M:%S')
         return (datetime.datetime.now()-past_time).seconds
 
     def calculate_now_temperature(self,cid):
-        if self.info[cid][3] == "running":
-            if self.mode == "winter":
-                if self.info[cid][1] == "high":
-                    now_temperature = self.info[cid][0] + self.calculate_time(cid)/20
-                elif self.info[cid][1] == "medium":
-                    now_temperature = self.info[cid][0] + self.calculate_time(cid)/30
-                elif self.info[cid][1] == "low":
-                    now_temperature = self.info[cid][0] + self.calculate_time(cid)/60
-            elif self.mode == "summer":
-                if self.info[cid][1] == "high":
-                    now_temperature = self.info[cid][0] - self.calculate_time(cid)/20
-                elif self.info[cid][1] == "medium":
-                    now_temperature = self.info[cid][0] - self.calculate_time(cid)/30
-                elif self.info[cid][1] == "low":
-                    now_temperature = self.info[cid][0] - self.calculate_time(cid)/60
-        else:
-            now_temperature = self.info[cid][0]
-        self.info[cid][0] = now_temperature
-        return int(now_temperature)
+        if self.mode == "winter":
+            if self.info[cid][1] == "high":
+                now_temperature = self.info[cid][0] + round(self.calculate_time(cid)/20,2)
+            elif self.info[cid][1] == "medium":
+                now_temperature = self.info[cid][0] + round(self.calculate_time(cid)/30,2)
+            elif self.info[cid][1] == "low":
+                now_temperature = self.info[cid][0] + round(self.calculate_time(cid)/60,2)
+        elif self.mode == "summer":
+            if self.info[cid][1] == "high":
+                now_temperature = self.info[cid][0] - round(self.calculate_time(cid)/20,2)
+            elif self.info[cid][1] == "medium":
+                now_temperature = self.info[cid][0] - round(self.calculate_time(cid)/30,2)
+            elif self.info[cid][1] == "low":
+                now_temperature = self.info[cid][0] - round(self.calculate_time(cid)/60,2)
+        return now_temperature
 
     def calculate_cost(self,cid):
-        if self.info[cid][3] == "running":
-            timezone = (datetime.datetime.now()-datetime.datetime.strptime(self.info[cid][5],'%Y-%m-%d %H:%M:%S')).seconds
-            if self.info[cid][1] == "high":
-                cost = self.info[cid][4] + timezone/20
-            elif self.info[cid][1] == "medium":
-                cost = self.info[cid][4] + timezone/30
-            elif self.info[cid][1] == "low":
-                cost = self.info[cid][4] + timezone/60
-        else:
-            cost = self.info[cid][4]
-        self.info[cid][4] = cost
-        self.info[cid][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-        return round(cost,2)
+        timezone = (datetime.datetime.now()-datetime.datetime.strptime(self.info[cid][5],'%Y-%m-%d %H:%M:%S')).seconds
+        if self.info[cid][1] == "high":
+            cost = self.info[cid][4] + round(timezone/20,2)
+        elif self.info[cid][1] == "medium":
+            cost = self.info[cid][4] + round(timezone/30,2)
+        elif self.info[cid][1] == "low":
+            cost = self.info[cid][4] + round(timezone/60,2)
+        return cost
 
     def send_to_database(self,str1):
         if self.finished == 1:
@@ -119,35 +109,16 @@ class server:
             database_exec = "select * from running_status where (room_id ='"+str1['cid'] +"' and (optype = 'set' or optype = 'finish' or optype = 'on' or optype = 'off'));"
             print(database_exec)
             cur.execute(database_exec)
-            report_text = '房间号\t时间                \t操作类型\t当前温度 \t设定温度 \t风速'
-            report_list = [report_text]
-            report_text = ''
+            report_list = []
             for r in cur.fetchall():
-                for rr in r:
-                    if rr == 'on':
-                        rr = '开机'
-                    if rr == 'set':
-                        rr = '设定'
-                    if rr == 'off':
-                        rr = '关机'
-                    if rr == 'finish':
-                        rr = '工作完成'
-                    report_text += str(rr)
-                    report_text += '\t'
-                #report_text = str(r)
+                report_text = str(r)
                 report_list += [report_text]
-                report_text = ''
             dealed = {"method":"report","data":report_list,"result":"ok"}
             return dealed
         elif str1['method'] == "checkout":
             database_exec = "delete from user_data where (room_id ='"+str1['cid'] +"');"
             print(database_exec)
             cur.execute(database_exec)
-            conn.commit()
-            time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-            database_exec = "insert into running_status (room_id,optime,optype)values('"+str(str1['cid'])+"','"+str(time_str)+"','off');"
-            print(database_exec)
-            sta=cur.execute(database_exec)
             conn.commit()
         elif str1['method'] == "register":
             if self.regflg == 1:
@@ -175,133 +146,151 @@ class server:
         conn.commit()
         return
 
+    def speed_to_int(self,speed):
+        if speed is "high":
+            return 10000
+        elif speed is "medium":
+            return 20000
+        else:
+            return 30000
+
+    def asyn(self):
+        r = {}
+        if self.now_running_num <= self.running_num:
+            num = self.now_running_num
+        else:
+            num = self.running_num
+        for i in range(num):
+            r[num-i-1] = list(self.myqueue.get())
+            cid = r[num-i-1][1]
+            self.info[cid][0] = self.calculate_now_temperature(cid)
+            self.info[cid][4] = self.calculate_cost(cid)
+            print(1)
+            if self.mode == "winter":
+                print(3)
+                if int(self.info[cid][0]) >= int(self.info[cid][2]):
+                    print(2)
+                    self.info[cid][3] = "standby"
+                    r[num-i-1] += ["no"]
+                    self.now_running_num -= 1
+                else:
+                    self.info[cid][3] = "running"
+                    r[num-i-1] += ["yes"]
+            else:
+                if int(self.info[cid][0]) <= int(self.info[cid][2]):
+                    print(4)
+                    self.info[cid][3] = "standby"
+                    r[num-i-1] += ["no"]
+                    self.now_running_num -= 1
+                else:
+                    self.info[cid][3] = "running"
+                    r[num-i-1] += ["yes"]
+        time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+        if self.now_running_num is not 0:
+            self.info[cid][5] = time_str
+        for i in range(num):
+            if r[i][2] == "yes":
+                weight = self.speed_to_int(self.info[r[i][1]][1]) + int(datetime.datetime.strftime(datetime.datetime.now(),'%M'))*100 + int(datetime.datetime.strftime(datetime.datetime.now(),'%S'))
+                self.myqueue.put((weight,r[i][1]))
+
+    def putout_from_queue(self,cid):
+        size = self.myqueue.qsize()
+        for i in range(size):
+            r[size-i] = self.myqueue.get()
+            if cid is r[size-i][1]:
+                r[size-i][2] = "no"
+            else:
+                r[size-i][2] = "yes"
+        for i in range(size):
+            if r[size-i][2] == "yes":
+                self.myqueue.put((r[size-i][0],r[size-i][1]))
+
     def judge(self,str1,websocket):
         self.reportflg = 0
         dealed = {}
-        if str1['method'] == "timer":
+
+        if str1['method'] =="timer":
             self.asyn()
 
         elif str1['method'] =="handshake":
             if self.is_registed(str1):
                 self.record_websocket(websocket,str1)
-                self.record(str1['cid'],int(str1['temp']),str1['speed'],int(str1['target']),"running",0)
+                self.record(str1['cid'],float(str1['temp']),str1['speed'],float(str1['target']),"running",0)
                 dealed = {"method":"handshake","result":"ok","config":{"mode":self.mode,"temp-max":self.temp_max,"temp-min":self.temp_min},"state":"running"}
                 time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
                 self.info[str1['cid']] = self.info[str1['cid']] + [time_str]
+                weight = self.speed_to_int(str1['speed']) + int(datetime.datetime.strftime(datetime.datetime.now(),'%M'))*100 + int(datetime.datetime.strftime(datetime.datetime.now(),'%S'))
+                self.myqueue.put((weight,str1['cid']))
                 self.now_running_num += 1
                 self.info[str1['cid']][3] = "running"
             else:
                 self.flag = 0
 
         elif str1['method'] =="set":
-            if self.mode == "winter":
-                if int(str1['target']) > self.info[str1['cid']][0]:
-                    self.info[str1['cid']][1] = str1['speed']
-                    self.info[str1['cid']][2] = int(str1['target'])
-                    state = "running"
-                    if self.info[str1['cid']][3] != "running":
-                        self.now_running_num += 1
-                        self.info[str1['cid']][3] = "running"
-                        self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-                else:
-                    self.info[str1['cid']][1] = str1['speed']
-                    self.info[str1['cid']][2] = int(str1['target'])
-                    state = "standby"
-                    if self.info[str1['cid']][3] != "standby":
-                        self.now_running_num -= 1
-                        self.info[str1['cid']][3] = "standby"
-                        self.info[str1['cid']][0] = self.calculate_now_temperature(str1['cid'])
-                        self.info[str1['cid']][4] = self.calculate_cost(str1['cid'])
-                        self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-            else:
-                if int(str1['target']) < self.info[str1['cid']][0]:
-                    self.info[str1['cid']][1] = str1['speed']
-                    self.info[str1['cid']][2] = int(str1['target'])
-                    state = "running"
-                    if self.info[str1['cid']][3] != "running":
-                        self.now_running_num += 1
-                        self.info[str1['cid']][3] = "running"
-                        self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
-                else:
-                    self.info[str1['cid']][1] = str1['speed']
-                    self.info[str1['cid']][2] = int(str1['target'])
-                    state = "standby"
-                    if self.info[str1['cid']][3] != "standby":
-                        self.now_running_num -= 1
-                        self.info[str1['cid']][3] = "standby"
-                        self.info[str1['cid']][0] = self.calculate_now_temperature(str1['cid'])
-                        self.info[str1['cid']][4] = self.calculate_cost(str1['cid'])
-                        self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+            self.info[str1['cid']][2] = float(str1['target'])
+            self.info[str1['cid']][1] = str1['speed']
+            state = self.info[str1['cid']][3]
             dealed = {"method":"set","state":state}
 
         elif str1['method'] =="get":
-            temp = self.calculate_now_temperature(str1['cid'])
-            self.gettemp = temp
-            if self.mode == "winter":
-                if temp >= self.info[str1['cid']][2]:
-                    self.finished = 1
-                    cost = self.calculate_cost(str1['cid'])
-                    self.info[str1['cid']][3] = "standby"
-                    state = "standby"
-                    self.now_running_num -= 1
-                else:
-                    self.finished = 0
-                    state = "running"
-            else:
-                if temp <= self.info[str1['cid']][2]:
-                    self.finished = 1
-                    self.info[str1['cid']][3] = "standby"
-                    state = "standby"
-                    self.now_running_num -= 1
-                else:
-                    self.finished = 0
-                    state = "running"
-            cost = self.calculate_cost(str1['cid'])
-            for (tkey,tvalue) in self.index.items():
-                if str1['cid'] == tvalue[1]:
-                    if cost >= int(tvalue[2]):
-                        self.flag = 0
-            self.now_cost = cost
+            temp = int(self.info[str1['cid']][0])
+            cost = self.info[str1['cid']][4]
+            state = self.info[str1['cid']][3]
             dealed = {"method":"get","temp":temp,"state":state,"cost":cost}
 
         elif str1['method'] =="changed":
             if self.mode == "winter":
-                if (int(str1['temp'])) >= self.info[str1['cid']][2]:
-                    self.info[str1['cid']][0] = int(str1['temp'])
+                if (int(str1['temp'])+1) > int(self.info[str1['cid']][2]):
+                    self.info[str1['cid']][0] = float(str1['temp'])
                     state = "standby"
                 else:
-                    self.info[str1['cid']][0] = int(str1['temp'])
+                    self.info[str1['cid']][0] = float(str1['temp'])
                     self.info[str1['cid']][3] = "running"
+                    self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+                    weight = self.speed_to_int(str1['cid'][1]) + int(datetime.datetime.strftime(datetime.datetime.now(),'%M'))*100 + int(datetime.datetime.strftime(datetime.datetime.now(),'%S'))
+                    self.myqueue.put((weight,str1['cid']))
                     self.now_running_num += 1
                     state = "running"
-                    self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             else:
-                if (int(str1['temp'])) <= self.info[str1['cid']][2]:
-                    self.info[str1['cid']][0] = int(str1['temp'])
+                if (int(str1['temp'])-1) < int(self.info[str1['cid']][2]):
+                    self.info[str1['cid']][0] = float(str1['temp'])
                     state = "standby"
                 else:
-                    self.info[str1['cid']][0] = int(str1['temp'])
+                    self.info[str1['cid']][0] = float(str1['temp'])
                     self.info[str1['cid']][3] = "running"
+                    self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
+                    weight = self.speed_to_int(str1['cid'][1]) + int(datetime.datetime.strftime(datetime.datetime.now(),'%M'))*100 + int(datetime.datetime.strftime(datetime.datetime.now(),'%S'))
+                    self.myqueue.put((weight,str1['cid']))
                     self.now_running_num += 1
                     state = "running"
-                    self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             dealed = {"method":"changed","state":state}
 
         elif str1['method'] =="shutdown":
+            self.flag = 0
             if self.info[str1['cid']] == "running":
                 self.now_running_num -= 1
-                self.info[str1['cid']][3] = "shutdown"
+                self.putout_from_queue(str1['cid'])
                 self.info[str1['cid']][0] = self.calculate_now_temperature(str1['cid'])
+                self.info[str1['cid']][3] = "shutdown"
                 self.info[str1['cid']][4] = self.calculate_cost(str1['cid'])
                 self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             else:
                 self.info[str1['cid']][3] = "shutdown"
             dealed = {"method":"shutdown","result":"ok","state":"shutdown"}
+
         elif str1['method'] == "report":
             self.reportflg = 1
 
         elif str1['method'] == "checkout":
+            if self.info[str1['cid']] == "running":
+                self.now_running_num -= 1
+                self.putout_from_queue(str1['cid'])
+                self.info[str1['cid']][0] = self.calculate_now_temperature(str1['cid'])
+                self.info[str1['cid']][3] = "shutdown"
+                self.info[str1['cid']][4] = self.calculate_cost(str1['cid'])
+                self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             tflag = 0
+            self.flag = 0
             for key1,value1 in self.index.items():
                 if value1[1] == str1['cid']:
                     if str1['cid'] in self.info.keys():
@@ -338,33 +327,31 @@ class server:
 
     @asyncio.coroutine
     def hello(self,websocket,path):
-        if self.now_running_num < self.running_num:
-            while True and self.flag:
-                decodejson = yield from websocket.recv()
-                if decodejson == None:
-                    break
-                else:
-                    rec = json.loads(decodejson)
-                    print(rec)
-                    dealed_str = self.judge(rec,websocket)
-                    if self.reportflg == 1:
-                        dealed_str = self.send_to_database(rec)
-                    else:
-                        self.send_to_database(rec)
-                    print(dealed_str)
-                    encodejson = json.dumps(dealed_str)
-                    if self.flag:
-                        yield from websocket.send(encodejson)
+        while True and self.flag:
+            decodejson = yield from websocket.recv()
+            if decodejson == None:
+                break
+            else:
+                rec = json.loads(decodejson)
+                print(rec)
+                dealed_str = self.judge(rec,websocket)
+                #if self.reportflg == 1:
+                    #dealed_str = self.send_to_database(rec)
+                #else:
+                    #self.send_to_database(rec)
+                print(dealed_str)
+                encodejson = json.dumps(dealed_str)
+                if self.flag:
+                    yield from websocket.send(encodejson)
         self.flag = 1
 
 s1 = server()
 start_server = websockets.serve(s1.hello, '0.0.0.0', 6666)
-sql_name = "hotel_manage"
-sql_username = "root"
-sql_password = "2525698"
-conn=pymysql.connect(host='localhost',user=sql_username,passwd=sql_password,db=sql_name,charset='utf8')
-cur=conn.cursor()
-sta=cur.execute("delete from user_data")
-sta=cur.execute("delete from running_status")
+#sql_name = "hotel_manage"
+#sql_username = "root"
+#sql_password = "2525698"
+#conn=pymysql.connect(host='localhost',user=sql_username,passwd=sql_password,db=sql_name,charset='utf8')
+#cur=conn.cursor()
+#sta=cur.execute("delete from user_data")
 asyncio.get_event_loop().run_until_complete(start_server)
 asyncio.get_event_loop().run_forever()
