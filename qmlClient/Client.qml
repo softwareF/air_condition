@@ -55,7 +55,10 @@ ApplicationWindow {
                 curTemp.text = msg.temp;
                 cost.text = msg.cost;
                 break;
-            case "set": case "changed":
+            case "set":
+                curTemp.text = msg.temp;
+                cost.text = msg.cost;
+            case "changed":
                 if(msg.state === "standby") {
                     state.text = "待机";
                 } else if(msg.state === "running") {
@@ -633,6 +636,7 @@ ApplicationWindow {
             var setReq = {
                 "method": "set",
                 "cid": clientID,
+                "temp": parseFloat(curTemp.text),
                 "target": parseFloat(destTemp.text),
                 "speed": fanSpeed
             }
