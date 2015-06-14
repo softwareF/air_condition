@@ -7,7 +7,7 @@ import time
 
 @asyncio.coroutine
 def timer():
-    websocket = yield from websockets.connect('ws://localhost:6666/')
+    websocket = yield from websockets.connect('ws://localhost:8000/')
     while 1:
         time.sleep(30)
         send_str = json.dumps({"method":"timer"})

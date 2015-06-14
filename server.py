@@ -49,29 +49,29 @@ class server:
     def calculate_now_temperature(self,cid):
         if self.mode == "winter":
             if self.info[cid][1] == "high":
-                now_temperature = self.info[cid][0] + round(self.calculate_time(cid)/20,2)
-            elif self.info[cid][1] == "medium":
-                now_temperature = self.info[cid][0] + round(self.calculate_time(cid)/30,2)
-            elif self.info[cid][1] == "low":
                 now_temperature = self.info[cid][0] + round(self.calculate_time(cid)/60,2)
+            elif self.info[cid][1] == "medium":
+                now_temperature = self.info[cid][0] + round(self.calculate_time(cid)/120,2)
+            elif self.info[cid][1] == "low":
+                now_temperature = self.info[cid][0] + round(self.calculate_time(cid)/180,2)
         elif self.mode == "summer":
             if self.info[cid][1] == "high":
-                now_temperature = self.info[cid][0] - round(self.calculate_time(cid)/20,2)
-            elif self.info[cid][1] == "medium":
-                now_temperature = self.info[cid][0] - round(self.calculate_time(cid)/30,2)
-            elif self.info[cid][1] == "low":
                 now_temperature = self.info[cid][0] - round(self.calculate_time(cid)/60,2)
+            elif self.info[cid][1] == "medium":
+                now_temperature = self.info[cid][0] - round(self.calculate_time(cid)/120,2)
+            elif self.info[cid][1] == "low":
+                now_temperature = self.info[cid][0] - round(self.calculate_time(cid)/180,2)
         return now_temperature
 
     def calculate_cost(self,cid):
         timezone = (datetime.datetime.now()-datetime.datetime.strptime(self.info[cid][5],'%Y-%m-%d %H:%M:%S')).seconds
         if self.info[cid][1] == "high":
-            cost = self.info[cid][4] + round(timezone/20,2)
-        elif self.info[cid][1] == "medium":
-            cost = self.info[cid][4] + round(timezone/30,2)
-        elif self.info[cid][1] == "low":
             cost = self.info[cid][4] + round(timezone/60,2)
-        return cost
+        elif self.info[cid][1] == "medium":
+            cost = self.info[cid][4] + round(timezone/120,2)
+        elif self.info[cid][1] == "low":
+            cost = self.info[cid][4] + round(timezone/180,2)
+        return round(cost,2)
 
     def send_to_database(self,str1):
         if self.finished == 1:
@@ -159,17 +159,15 @@ class server:
         if self.now_running_num <= self.running_num:
             num = self.now_running_num
         else:
+            flag = 1
             num = self.running_num
         for i in range(num):
             r[num-i-1] = list(self.myqueue.get())
             cid = r[num-i-1][1]
             self.info[cid][0] = self.calculate_now_temperature(cid)
             self.info[cid][4] = self.calculate_cost(cid)
-            print(1)
             if self.mode == "winter":
-                print(3)
                 if int(self.info[cid][0]) >= int(self.info[cid][2]):
-                    print(2)
                     self.info[cid][3] = "standby"
                     r[num-i-1] += ["no"]
                     self.now_running_num -= 1
@@ -187,7 +185,8 @@ class server:
                     r[num-i-1] += ["yes"]
         time_str = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
         if self.now_running_num is not 0:
-            self.info[cid][5] = time_str
+            for key,value in self.info:
+                self.info[key][5] = time_str
         for i in range(num):
             if r[i][2] == "yes":
                 weight = self.speed_to_int(self.info[r[i][1]][1]) + int(datetime.datetime.strftime(datetime.datetime.now(),'%M'))*100 + int(datetime.datetime.strftime(datetime.datetime.now(),'%S'))
@@ -205,12 +204,26 @@ class server:
             if r[size-i][2] == "yes":
                 self.myqueue.put((r[size-i][0],r[size-i][1]))
 
+    def display(self):#send message to the special client for showing
+        for key,value in self.info.items():
+            cid = key
+            temp = value[0]
+            speed = value[1]
+            targrt = value[2]
+            state = value[3]
+            cost = value[4]
+            rest = self.index[key][2]-value[4]
+            send = {"cid":cid,"temp":temp,"targrt":targrt,"state":state,"speed":speed,"cost":cost,"rest":rest}
+            send = json.dumps(send)
+            self.socket["display"].send(send)
+
     def judge(self,str1,websocket):
         self.reportflg = 0
         dealed = {}
 
         if str1['method'] =="timer":
             self.asyn()
+            #self.display()
 
         elif str1['method'] =="handshake":
             if self.is_registed(str1):
@@ -223,6 +236,7 @@ class server:
                 self.myqueue.put((weight,str1['cid']))
                 self.now_running_num += 1
                 self.info[str1['cid']][3] = "running"
+                #self.display()
             else:
                 self.flag = 0
 
@@ -230,12 +244,14 @@ class server:
             self.info[str1['cid']][2] = float(str1['target'])
             self.info[str1['cid']][1] = str1['speed']
             state = self.info[str1['cid']][3]
+            #self.display()
             dealed = {"method":"set","state":state}
 
         elif str1['method'] =="get":
             temp = int(self.info[str1['cid']][0])
             cost = self.info[str1['cid']][4]
             state = self.info[str1['cid']][3]
+            #self.display()
             dealed = {"method":"get","temp":temp,"state":state,"cost":cost}
 
         elif str1['method'] =="changed":
@@ -263,6 +279,7 @@ class server:
                     self.myqueue.put((weight,str1['cid']))
                     self.now_running_num += 1
                     state = "running"
+            #self.display()
             dealed = {"method":"changed","state":state}
 
         elif str1['method'] =="shutdown":
@@ -276,6 +293,7 @@ class server:
                 self.info[str1['cid']][5] = datetime.datetime.strftime(datetime.datetime.now(),'%Y-%m-%d %H:%M:%S')
             else:
                 self.info[str1['cid']][3] = "shutdown"
+            #self.display()
             dealed = {"method":"shutdown","result":"ok","state":"shutdown"}
 
         elif str1['method'] == "report":
@@ -306,6 +324,7 @@ class server:
                 dealed = {"method":"checkout","result":"no"}
             else:
                 dealed = {"method":"checkout","result":"ok"}
+            #self.display()
 
         elif str1['method'] == "register":
             if str1['id'] not in self.index.keys():
@@ -315,6 +334,7 @@ class server:
             else:
                 dealed = {"result":"no","method":"register"}
                 self.regflg = 0
+            #self.display()
 
         elif str1['method'] == "recharge":
             if str1['id'] in self.index.keys():
@@ -322,6 +342,7 @@ class server:
                 dealed = {"result":"ok","method":"recharge"}
             else:
                 dealed = {"result":"no","method":"recharge"}
+            #self.display()
 
         return dealed
 
@@ -346,7 +367,7 @@ class server:
         self.flag = 1
 
 s1 = server()
-start_server = websockets.serve(s1.hello, '0.0.0.0', 6666)
+start_server = websockets.serve(s1.hello, '0.0.0.0', 8000)
 #sql_name = "hotel_manage"
 #sql_username = "root"
 #sql_password = "2525698"
