@@ -43,9 +43,17 @@ ApplicationWindow {
                 }
                 break;
             case "get":
+                if(msg.state === "standby") {
+                    state.text = "待机";
+                } else if(msg.state === "running") {
+                    state.text = "运行";
+                } else {
+                    state.text = "停机";
+                    socket.active = false;
+                }
                 curTemp.text = msg.temp;
                 cost.text = msg.cost;
-                // no break !!
+                break;
             case "set": case "changed":
                 if(msg.state === "standby") {
                     state.text = "待机";
