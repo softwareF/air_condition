@@ -101,6 +101,7 @@ ApplicationWindow {
                 } else if(socket.status == WebSocket.Error) {
                     console.debug("Socket Error: " + socket.errorString);
                     socket.active = false;
+                    console.debug(socket.status);
                 }
                 state.text = "停机";
                 radioOff.checked = true;
@@ -149,9 +150,13 @@ ApplicationWindow {
                     text: qsTr("On")
                     exclusiveGroup: onoff
                     onClicked: {
-                        console.debug(socket.status);
-                        socket.active = true;
-                        console.debug(socket.status);
+                        // 如果url更改则会自动连接，否则手动打开连接
+                        console.debug("before " + socket.status);
+                        if(socket.url == tmpURL)
+                            socket.active = true;
+                        else
+                            socket.url = tmpURL;
+                        console.debug("after " + socket.status);
                     }
                 }
 
@@ -548,7 +553,8 @@ ApplicationWindow {
 
                 if(state.text == "停机") {
                     curTemp.text = tempInit;
-                    socket.url = tmpURL;
+                    // 如果这里设置地址会马上连接，改到radioOn里设置
+                    //socket.url = tmpURL;
                     clientID = tmpCID;
                     messageDialog.show(qsTr("设置成功！"), StandardIcon.Information)
                 } else {
