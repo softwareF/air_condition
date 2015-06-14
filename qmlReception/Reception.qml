@@ -34,7 +34,7 @@ ApplicationWindow {
 
     WebSocket {
         id: socket
-        url: "ws://localhost:6666/"
+        url: "ws://localhost:8080/"
 
         onTextMessageReceived: {
             console.debug("Receive: " + message);

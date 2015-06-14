@@ -20,7 +20,7 @@ ApplicationWindow {
 
     /*** 临时保存设置（程序运行中无法修改） ***/
     property var tempInit: 25
-    property var tmpURL: "ws://localhost:6666/"
+    property var tmpURL: "ws://localhost:8080/"
     property var tmpCID: "305f";
 
     WebSocket {
@@ -193,7 +193,8 @@ ApplicationWindow {
                     checkable: false
                     onClicked: {
                         var tmp = parseFloat(destTemp.text);
-                        if(tmp < tempMax) {
+                        // 温度为浮点，边界判断
+                        if(tmp + 1 <= tempMax) {
                             destTemp.text = (tmp + 1).toString();
                         }
                         if(state.text != "停机")
@@ -207,7 +208,8 @@ ApplicationWindow {
                     Layout.fillWidth: true
                     onClicked: {
                         var tmp = parseFloat(destTemp.text);
-                        if(tmp > tempMin) {
+                        // 温度为浮点，边界判断
+                        if(tmp - 1 >= tempMin) {
                             destTemp.text = (tmp - 1).toString();
                         }
                         if(state.text != "停机")
