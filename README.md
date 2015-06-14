@@ -18,7 +18,7 @@
 >     * 返回     {'method': 'recharge', 'result': 'ok'}
 >     * 计时     计时器发送 {'method': 'timer'}
 >     * 返回     无
->     * 房间状态 服务器发送 {'cid':'xxx','speed':'xxx','target':'xxx','state':'xxx','cost':'xxx','rest':'xxx'}
+>     * 房间状态 服务器发送 {'cid':'xxx','temp':'xxx','speed':'xxx','target':'xxx','state':'xxx','cost':'xxx','rest':'xxx'}
 >     * 返回     无
 >     * 注意     实现显示的客户端的cid必须是“display”，而且必须发送handshake。
 >     * 握手     {'method': 'handshake', 'cid': 'display'}
