@@ -11,17 +11,17 @@ class server:
     def __init__(self):
         self.mode = input("Input the mode(winter/summer):")
         self.running_num = int(input("Input the max running number:"))
-        self.info = {}
-        self.index = {}
-        self.socket = {}
-        self.flag = 1
+        self.info = {} #record the information of each rooms
+        self.index = {} #record the user id and the room id
+        self.socket = {} #record each socket
+        self.flag = 1 #shutdown the socket if flag is 0
         self.now_running_num = 0
         self.regflg = 0
         self.gettemp = 0
         self.reportflg = 0
         self.finished = 0
         self.now_cost = 0
-        self.myqueue = queue.PriorityQueue()
+        self.myqueue = queue.PriorityQueue() #record the of self.info
         if self.mode == "winter":
             self.temp_max = 30
             self.temp_min = 25
@@ -29,11 +29,11 @@ class server:
             self.temp_max = 25
             self.temp_min = 18
 
-    def record_websocket(self,websocket,str1):
+    def record_websocket(self,websocket,str1): #record the socket when handshake
         if str1['cid'] not in self.socket.keys():
             self.socket[str1['cid']] = websocket
 
-    def is_registed(self,str1):
+    def is_registed(self,str1): #if not register then don't let the socket connected
         for key,value in self.index.items():
             if str1['cid'] == value[1]:
                 return 1
@@ -42,7 +42,7 @@ class server:
     def record(self,cid,temp,speed,target,state,cost):
         self.info[cid] = [temp,speed,target,state,cost]
 
-    def calculate_time(self,cid):
+    def calculate_time(self,cid): #calculate the seconds of the timezone
         past_time = datetime.datetime.strptime(self.info[cid][5],'%Y-%m-%d %H:%M:%S')
         return (datetime.datetime.now()-past_time).seconds
 
@@ -146,7 +146,7 @@ class server:
         conn.commit()
         return
 
-    def speed_to_int(self,speed):
+    def speed_to_int(self,speed): #the PriorityQueue is ordered from the smallest to the biggest
         if speed is "high":
             return 10000
         elif speed is "medium":
@@ -159,7 +159,6 @@ class server:
         if self.now_running_num <= self.running_num:
             num = self.now_running_num
         else:
-            flag = 1
             num = self.running_num
         for i in range(num):
             r[num-i-1] = list(self.myqueue.get())
@@ -192,7 +191,7 @@ class server:
                 weight = self.speed_to_int(self.info[r[i][1]][1]) + int(datetime.datetime.strftime(datetime.datetime.now(),'%M'))*100 + int(datetime.datetime.strftime(datetime.datetime.now(),'%S'))
                 self.myqueue.put((weight,r[i][1]))
 
-    def putout_from_queue(self,cid):
+    def putout_from_queue(self,cid): #if the sub-control air-condition is still running but shutdown , we should put out the info of it from the queue
         size = self.myqueue.qsize()
         for i in range(size):
             r[size-i] = self.myqueue.get()
@@ -315,7 +314,7 @@ class server:
                         del self.info[str1['cid']]
                         dealed = {"method":"checkout","state":"shutdown"}
                         encoded = json.dumps(dealed)
-                        self.socket[str1['cid']].send(encoded)
+                        self.socket[str1['cid']].send(encoded) #don't use yield from here because yield will reduce a signal to make the program return back
                         self.socket[str1['cid']].recv()
                         tflag = 1
                         del self.index[key1]
@@ -347,7 +346,7 @@ class server:
         return dealed
 
     @asyncio.coroutine
-    def hello(self,websocket,path):
+    def hello(self,websocket,path): #handler
         while True and self.flag:
             decodejson = yield from websocket.recv()
             if decodejson == None:
@@ -367,7 +366,7 @@ class server:
         self.flag = 1
 
 s1 = server()
-start_server = websockets.serve(s1.hello, '0.0.0.0', 8000)
+start_server = websockets.serve(s1.hello, '0.0.0.0', 8000) #use 0.0.0.0 and the port number must larger than 8000
 #sql_name = "hotel_manage"
 #sql_username = "root"
 #sql_password = "2525698"
