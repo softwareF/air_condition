@@ -69,8 +69,11 @@ ApplicationWindow {
                 }
                 break;
             case "shutdown":
-                if(msg.result === "ok")
+                if(msg.result === "ok") {
                     socket.active = false;
+
+                    console.debug("SHUTDOWN " + socket.status);
+                }
                 break;
             case "checkout":
                 var checkout = {
@@ -101,6 +104,7 @@ ApplicationWindow {
             } else {
                 if (socket.status == WebSocket.Closed) {
                     console.debug("Socket closed");
+                    console.debug(socket.status);
                 } else if(socket.status == WebSocket.Error) {
                     console.debug("Socket Error: " + socket.errorString);
                     socket.active = false;
@@ -174,6 +178,7 @@ ApplicationWindow {
                             cid: clientID
                         }
                         socket.sendTextMessage(JSON.stringify(shutdown));
+                        console.debug("Send: " + JSON.stringify(shutdown));
                     }
                 }
             }
@@ -399,6 +404,7 @@ ApplicationWindow {
 
             Label {
                 id: mode
+                text: "制热"
                 font.pointSize: 12
                 verticalAlignment: Text.AlignVCenter
                 anchors.fill: parent
@@ -433,14 +439,14 @@ ApplicationWindow {
                     } else if(state.text == "停机") {
                         console.debug("变为停机");
                         repeatTimer.stop();
-                        autoChange.stop();
+                        autoChange.start();
 
                         testInterval.stop();
                         curTemp.text = tempInit;
                         socket.url = tmpURL;
                         clientID = tmpCID;
                         cost.text = "0.0";
-                        mode.text = "";
+                        mode.text = "制热";
                         radioMed.checked = true;
                     }
                 }
@@ -559,6 +565,7 @@ ApplicationWindow {
                     // 如果这里设置地址会马上连接，改到radioOn里设置
                     //socket.url = tmpURL;
                     clientID = tmpCID;
+                    autoChange.restart();
                     messageDialog.show(qsTr("设置成功！"), StandardIcon.Information)
                 } else {
                     messageDialog.show(qsTr("设置成功！下次连接时生效"), StandardIcon.Information)
@@ -615,15 +622,16 @@ ApplicationWindow {
 
     Timer {
         id: autoChange
-        interval: 1000 * 60 * 2
+        interval: 1000 * 60 * 1
         repeat: true
+        running: true;
         onTriggered: {
             var tmp = parseFloat(curTemp.text);
             if(mode.text === "制热"){
-                curTemp.text = (tmp - 1).toString();
+                curTemp.text = (tmp - 0.5).toString();
             }
             else if (mode.text == "制冷"){
-                curTemp.text = (tmp + 1).toString();
+                curTemp.text = (tmp + 0.5).toString();
             }
         }
     }
