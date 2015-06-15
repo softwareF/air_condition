@@ -1,10 +1,10 @@
-import QtQuick 2.4
-import QtQuick.Controls 1.3
+import QtQuick 2.0
+import QtQuick.Controls 1.2
 import QtQuick.Window 2.2
 import Qt.WebSockets 1.0
 import QtQuick.Dialogs 1.2
 import QtQuick.Layouts 1.1
-import QtQuick.Controls.Styles 1.3
+import QtQuick.Controls.Styles 1.2
 
 ApplicationWindow {
     id: client
@@ -19,8 +19,8 @@ ApplicationWindow {
     property var tempMin
 
     /*** 临时保存设置（程序运行中无法修改） ***/
-    property var tempInit: 25
-    property var tmpURL: "ws://localhost:8080/"
+    property var tempInit: 12
+    property var tmpURL: "ws://10.8.163.34:8080/ws"
     property var tmpCID: "305f";
 
     WebSocket {
@@ -442,10 +442,10 @@ ApplicationWindow {
                         autoChange.start();
 
                         testInterval.stop();
-                        curTemp.text = tempInit;
+                        //curTemp.text = tempInit;
                         socket.url = tmpURL;
                         clientID = tmpCID;
-                        cost.text = "0.0";
+                        //cost.text = "0.0";
                         mode.text = "制热";
                         radioMed.checked = true;
                     }
